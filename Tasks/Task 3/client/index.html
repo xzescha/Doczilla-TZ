@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List</title>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #todo-container {
+            width: 300px;
+            margin: 0 auto;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            padding: 10px;
+            background: #f4f4f4;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+<div id="todo-container">
+    <h2>Todo List</h2>
+    <input type="text" id="todo-input" placeholder="Add a new task">
+    <button id="add-todo">Add</button>
+    <ul id="todo-list"></ul>
+</div>
+<script>
+    $(document).ready(function() {
+        function fetchTodos() {
+            $.get('http://localhost:3000/todos', function(data) {
+                $('#todo-list').empty();
+                data.forEach(todo => {
+                    $('#todo-list').append(`
+                        <li data-id="${todo.id}">
+                            <input type="checkbox" ${todo.completed ? 'checked' : ''} class="todo-checkbox">
+                            ${todo.title}
+                            <button class="delete-todo">Delete</button>
+                        </li>
+                    `);
+                });
+            });
+        }
+
+        fetchTodos();
+
+        $('#add-todo').click(function() {
+            const title = $('#todo-input').val();
+            $.post('http://localhost:3000/todos', { title }, function(todo) {
+                fetchTodos();
+                $('#todo-input').val('');
+            });
+        });
+
+        $('#todo-list').on('change', '.todo-checkbox', function() {
+            const id = $(this).closest('li').data('id');
+            const completed = $(this).is(':checked');
+            $.ajax({
+                url: `http://localhost:3000/todos/${id}`,
+                type: 'PATCH',
+                contentType: 'application/json',
+                data: JSON.stringify({ completed }),
+                success: fetchTodos
+            });
+        });
+
+        $('#todo-list').on('click', '.delete-todo', function() {
+            const id = $(this).closest('li').data('id');
+            $.ajax({
+                url: `http://localhost:3000/todos/${id}`,
+                type: 'DELETE',
+                success: fetchTodos
+            });
+        });
+    });
+</script>
+</body>
+</html>
